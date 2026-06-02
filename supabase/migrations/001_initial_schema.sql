@@ -39,7 +39,7 @@ create table if not exists finances (
   description text,
   category text,
   date date default current_date,
-  month text generated always as (to_char(date, 'YYYY-MM')) stored,
+  month text,
   notes text
 );
 
