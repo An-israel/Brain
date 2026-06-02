@@ -53,6 +53,7 @@ export default function FinancesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [success, setSuccess] = useState('')
+  const [formError, setFormError] = useState('')
 
   // Form state
   const [type, setType] = useState('income')
@@ -88,18 +89,25 @@ export default function FinancesPage() {
     e.preventDefault()
     if (!amount || !description) return
     setSubmitting(true)
+    setFormError('')
+    setSuccess('')
     try {
       const res = await fetch('/api/finances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, amount: parseFloat(amount.replace(/,/g, '')), description, category, date, notes }),
       })
+      const data = await res.json()
       if (res.ok) {
-        setSuccess(`${TYPE_OPTIONS.find(t => t.value === type)?.label} logged successfully`)
+        setSuccess(`✓ ${TYPE_OPTIONS.find(t => t.value === type)?.label} saved`)
         resetForm()
         loadFinances()
-        setTimeout(() => setSuccess(''), 3000)
+        setTimeout(() => setSuccess(''), 4000)
+      } else {
+        setFormError(data.error || `Error ${res.status} — try again`)
       }
+    } catch (err) {
+      setFormError('Network error — check connection')
     } finally {
       setSubmitting(false)
     }
@@ -239,17 +247,16 @@ export default function FinancesPage() {
             </div>
 
             {/* Submit */}
-            <div className="md:col-span-2 flex items-center gap-4">
+            <div className="md:col-span-2 flex flex-col gap-3">
               <button
                 type="submit"
                 disabled={submitting || !amount || !description}
-                className="bg-[#C9A84C] text-black font-bold text-sm px-8 py-3 rounded-lg hover:bg-[#d4b060] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-mono"
+                className="w-full bg-[#C9A84C] text-black font-bold text-sm px-8 py-3 rounded-lg hover:bg-[#d4b060] transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-mono"
               >
                 {submitting ? 'Saving...' : `Save ${selectedType.label}`}
               </button>
-              {success && (
-                <span className="text-green-400 text-sm font-mono">{success}</span>
-              )}
+              {success && <span className="text-green-400 text-sm font-mono text-center">{success}</span>}
+              {formError && <span className="text-red-400 text-sm font-mono text-center bg-red-400/10 border border-red-400/20 rounded px-3 py-2">{formError}</span>}
             </div>
           </form>
         </div>
