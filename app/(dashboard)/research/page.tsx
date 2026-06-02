@@ -60,21 +60,69 @@ const STATUS_FILTERS = ['new', 'reviewing', 'acting', 'passed']
 export default function ResearchPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>(STATIC_OPPORTUNITIES)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [running, setRunning] = useState(false)
+  const [runMsg, setRunMsg] = useState('')
 
-  useEffect(() => {
+  function loadOpportunities() {
     fetch('/api/opportunities')
       .then((r) => r.json())
       .then((d) => { if (d.opportunities?.length) setOpportunities(d.opportunities) })
       .catch(() => {})
+  }
+
+  useEffect(() => {
+    loadOpportunities()
   }, [])
+
+  async function runResearch() {
+    setRunning(true)
+    setRunMsg('')
+    try {
+      const res = await fetch('/api/research', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setRunMsg(`Found ${data.count || 0} new opportunities`)
+        loadOpportunities()
+      } else {
+        setRunMsg(data.error || 'Research failed')
+      }
+    } catch {
+      setRunMsg('Network error — try again')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  async function updateStatus(id: string, status: string) {
+    setOpportunities((prev) => prev.map((o) => o.id === id ? { ...o, status } : o))
+    try {
+      await fetch('/api/opportunities', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      })
+    } catch {}
+  }
 
   const filtered = statusFilter === 'all' ? opportunities : opportunities.filter((o) => o.status === statusFilter)
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#C9A84C]">Research & Opportunities</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Income opportunities and strategic intelligence</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#C9A84C]">Research & Opportunities</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Income opportunities and strategic intelligence</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={runResearch}
+            disabled={running}
+            className="px-4 py-2 bg-[#C9A84C] text-black text-sm font-bold rounded-lg hover:bg-[#d4b060] disabled:opacity-50 transition-colors"
+          >
+            {running ? 'Running...' : 'Run Research'}
+          </button>
+          {runMsg && <span className="text-xs text-gray-400 font-mono">{runMsg}</span>}
+        </div>
       </div>
 
       {/* Status Filter */}
@@ -149,13 +197,26 @@ export default function ResearchPage() {
               </div>
             )}
 
-            {/* Status badge */}
+            {/* Status badge + update */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#1A1A1A]">
               <span className="text-xs text-gray-600 font-mono">{opp.status?.toUpperCase()}</span>
               {opp.recommended && (
                 <span className="text-xs text-[#C9A84C] font-mono">★ Recommended</span>
               )}
             </div>
+            {opp.id && (
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {STATUS_FILTERS.filter((s) => s !== opp.status).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => updateStatus(opp.id!, s)}
+                    className="text-xs text-gray-600 hover:text-[#C9A84C] transition-colors font-mono"
+                  >
+                    → {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

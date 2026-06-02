@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 
-export const dynamic = 'force-dynamic'
-
 type Task = {
   id?: string
   title: string
