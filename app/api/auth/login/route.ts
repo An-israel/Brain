@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json()
 
-    const supabase = createServerSupabaseClient()
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
+    }
+
+    // Use anon key for auth — service role key is not for user auth
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
@@ -14,26 +23,23 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true })
 
-    // Set the session cookies so middleware picks them up
     const { access_token, refresh_token } = data.session
-    response.cookies.set('sb-access-token', access_token, {
+    const cookieOpts = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
       path: '/',
-    })
-    response.cookies.set('sb-refresh-token', refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
-      path: '/',
-    })
+    }
+
+    response.cookies.set('sb-access-token', access_token, { ...cookieOpts, maxAge: 60 * 60 * 24 * 7 })
+    response.cookies.set('sb-refresh-token', refresh_token, { ...cookieOpts, maxAge: 60 * 60 * 24 * 30 })
 
     return response
   } catch (err) {
-    console.error('Login error:', err)
-    return NextResponse.json({ error: 'Server error during login' }, { status: 500 })
+    console.error('Login route error:', err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Server error' },
+      { status: 500 }
+    )
   }
 }
