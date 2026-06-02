@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getBrowserClient } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,15 +16,22 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const supabase = getBrowserClient()
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      if (authError) {
-        setError(authError.message)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed')
       } else {
         router.push('/chat')
+        router.refresh()
       }
     } catch {
-      setError('An unexpected error occurred')
+      setError('Network error — check your connection')
     } finally {
       setLoading(false)
     }
@@ -52,8 +58,8 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#111] border border-[#333] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[#C9A84C] transition-colors placeholder-gray-700"
-              placeholder="you@example.com"
+              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[#C9A84C] transition-colors placeholder-gray-700"
+              placeholder="aniekaneazy@gmail.com"
             />
           </div>
 
@@ -64,7 +70,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#111] border border-[#333] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[#C9A84C] transition-colors placeholder-gray-700"
+              className="w-full bg-[#0A0A0A] border border-[#333] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-[#C9A84C] transition-colors placeholder-gray-700"
               placeholder="••••••••"
             />
           </div>
