@@ -50,8 +50,9 @@ function formatNaira(n: number) {
 export default function FinancesPage() {
   const [finances, setFinances] = useState<Finance[]>([])
   const [juneIncome, setJuneIncome] = useState(0)
+  const [seeding, setSeeding] = useState(false)
 
-  useEffect(() => {
+  function loadFinances() {
     fetch('/api/finances')
       .then((r) => r.json())
       .then((d) => {
@@ -64,13 +65,34 @@ export default function FinancesPage() {
         }
       })
       .catch(() => {})
-  }, [])
+  }
+
+  useEffect(() => { loadFinances() }, [])
+
+  async function handleSeed() {
+    setSeeding(true)
+    try {
+      await fetch('/api/seed')
+      loadFinances()
+    } finally {
+      setSeeding(false)
+    }
+  }
 
   const progressPct = Math.min(100, Math.round((juneIncome || GUARANTEED) / JUNE_TARGET * 100))
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#C9A84C] mb-1">Financial Dashboard</h1>
+      <div className="flex items-start justify-between mb-1">
+        <h1 className="text-2xl font-bold text-[#C9A84C]">Financial Dashboard</h1>
+        <button
+          onClick={handleSeed}
+          disabled={seeding}
+          className="text-xs font-mono text-[#C9A84C] border border-[#C9A84C44] rounded px-3 py-1.5 bg-transparent hover:bg-[#C9A84C11] transition-colors disabled:opacity-50"
+        >
+          {seeding ? 'Seeding...' : 'Seed Data'}
+        </button>
+      </div>
       <p className="text-gray-500 text-sm mb-8">June 2026 — Path to ₦2M/month</p>
 
       {/* Summary Cards */}

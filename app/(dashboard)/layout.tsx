@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { getBrowserClient } from '@/lib/supabase'
 
 const navItems = [
   { href: '/chat', label: 'Chat', icon: '💬' },
@@ -19,7 +20,14 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  async function handleSignOut() {
+    const supabase = getBrowserClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <div className="flex h-screen bg-[#0A0A0A] overflow-hidden">
@@ -73,6 +81,12 @@ export default function DashboardLayout({
         <div className="p-4 border-t border-[#C9A84C22]">
           <div className="text-xs text-gray-600 font-mono">v1.0 — June 2026</div>
           <div className="text-xs text-[#C9A84C66] mt-1">"Light to the World"</div>
+          <button
+            onClick={handleSignOut}
+            className="mt-3 text-xs text-[#C9A84C] font-mono bg-transparent hover:text-[#d4b060] transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </aside>
 
