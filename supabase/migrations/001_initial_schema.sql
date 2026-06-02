@@ -77,9 +77,23 @@ alter table finances enable row level security;
 alter table opportunities enable row level security;
 alter table content_calendar enable row level security;
 
-create policy "Allow all for authenticated" on conversations for all using (auth.role() = 'authenticated');
-create policy "Allow all for authenticated" on brain_context for all using (auth.role() = 'authenticated');
-create policy "Allow all for authenticated" on tasks for all using (auth.role() = 'authenticated');
-create policy "Allow all for authenticated" on finances for all using (auth.role() = 'authenticated');
-create policy "Allow all for authenticated" on opportunities for all using (auth.role() = 'authenticated');
-create policy "Allow all for authenticated" on content_calendar for all using (auth.role() = 'authenticated');
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='conversations' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on conversations for all using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='brain_context' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on brain_context for all using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='tasks' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on tasks for all using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='finances' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on finances for all using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='opportunities' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on opportunities for all using (auth.role() = 'authenticated');
+  end if;
+  if not exists (select 1 from pg_policies where tablename='content_calendar' and policyname='Allow all for authenticated') then
+    create policy "Allow all for authenticated" on content_calendar for all using (auth.role() = 'authenticated');
+  end if;
+end $$;
