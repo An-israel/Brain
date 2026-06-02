@@ -6,12 +6,15 @@ import { useState } from 'react'
 import { getBrowserClient } from '@/lib/supabase'
 
 const navItems = [
+  { href: '/home', label: 'Home', icon: '◈' },
   { href: '/chat', label: 'Chat', icon: '💬' },
   { href: '/finances', label: 'Finances', icon: '₦' },
   { href: '/tasks', label: 'Tasks', icon: '✓' },
   { href: '/content', label: 'Content', icon: '📅' },
   { href: '/research', label: 'Research', icon: '🔍' },
   { href: '/team', label: 'Team', icon: '👥' },
+  { href: '/skryve', label: 'Skryve', icon: '⚡' },
+  { href: '/nexus', label: 'Nexus', icon: '🏢' },
 ]
 
 export default function DashboardLayout({

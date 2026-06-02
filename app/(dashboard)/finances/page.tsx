@@ -353,6 +353,114 @@ export default function FinancesPage() {
         </div>
 
       </div>
+
+      {/* Debt Clearance Plan */}
+      <DebtClearancePlan finances={finances} />
+    </div>
+  )
+}
+
+const DEBT_PLAN = [
+  { name: 'Samuel', amount: 15000, rank: 1, action: 'Clear this month from extra income — quick win.' },
+  { name: 'Otos', amount: 20000, rank: 2, action: 'Clear alongside Samuel. ₦35K clears 2 debts together.' },
+  { name: 'Taker', amount: 100000, rank: 3, action: 'Attack with course sales + EMC surplus in July.' },
+  { name: 'Emmanuel (gimbal)', amount: 250000, rank: 4, action: 'Schedule payment after Taker is cleared.' },
+  { name: 'Rent (due next month)', amount: 365000, rank: 5, action: 'Hard deadline — prioritize from July income.' },
+  { name: 'Sun King Solar', amount: 800000, rank: 6, action: 'Long-term plan — negotiate installment schedule.' },
+]
+
+function DebtClearancePlan({ finances }: { finances: Finance[] }) {
+  // Compute paid per creditor from debt_payment entries
+  const paidMap: Record<string, number> = {}
+  finances.filter(f => f.type === 'debt_payment').forEach(f => {
+    const desc = (f.description || '').toLowerCase()
+    for (const debt of DEBT_PLAN) {
+      if (desc.includes(debt.name.toLowerCase().split(' ')[0].toLowerCase())) {
+        paidMap[debt.name] = (paidMap[debt.name] || 0) + Number(f.amount)
+      }
+    }
+  })
+
+  const totalOwed = DEBT_PLAN.reduce((s, d) => s + d.amount, 0)
+  const totalPaid = Object.values(paidMap).reduce((s, v) => s + v, 0)
+  const totalCleared = DEBT_PLAN.filter(d => (paidMap[d.name] || 0) >= d.amount).reduce((s, d) => s + d.amount, 0)
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center gap-3 mb-2">
+        <h2 className="text-lg font-bold text-[#C9A84C]">Debt Clearance Plan</h2>
+        <span className="text-xs font-mono bg-[#C9A84C11] text-[#C9A84C] border border-[#C9A84C44] px-2 py-0.5 rounded">PRIORITY ORDER</span>
+      </div>
+
+      {/* BRAIN's note */}
+      <div className="bg-[#111111] border border-[#C9A84C22] rounded-xl p-4 mb-6 flex gap-3">
+        <span className="text-[#C9A84C] font-mono text-sm shrink-0">BRAIN:</span>
+        <p className="text-sm text-gray-300">
+          Clear Samuel and Otos first — ₦35K clears 2 debts and builds momentum. Then attack Taker.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {DEBT_PLAN.map((debt) => {
+          const paid = paidMap[debt.name] || 0
+          const pct = Math.min(100, Math.round((paid / debt.amount) * 100))
+          const cleared = paid >= debt.amount
+          return (
+            <div key={debt.name} className={`bg-[#111111] rounded-xl p-5 border ${cleared ? 'border-green-400/30' : 'border-[#222222]'}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono text-[#C9A84C] bg-[#C9A84C11] border border-[#C9A84C33] px-2 py-0.5 rounded">
+                      #{debt.rank}
+                    </span>
+                    {cleared && <span className="text-xs font-mono text-green-400 bg-green-400/10 border border-green-400/30 px-2 py-0.5 rounded">CLEARED ✓</span>}
+                  </div>
+                  <div className="font-semibold text-white">{debt.name}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-red-400 font-mono">{formatNaira(debt.amount)}</div>
+                  {paid > 0 && <div className="text-xs text-blue-400 font-mono">-{formatNaira(paid)} paid</div>}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">{debt.action}</p>
+              <div className="h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#C9A84C] to-green-400 rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-600 font-mono mt-1 text-right">{pct}% cleared</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Summary */}
+      <div className="bg-[#111111] border border-[#222222] rounded-xl p-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-xs font-mono text-gray-500 mb-1">TOTAL OWED</div>
+            <div className="text-xl font-bold text-red-400 font-mono">{formatNaira(totalOwed)}</div>
+          </div>
+          <div>
+            <div className="text-xs font-mono text-gray-500 mb-1">TOTAL PAID</div>
+            <div className="text-xl font-bold text-blue-400 font-mono">{formatNaira(totalPaid)}</div>
+          </div>
+          <div>
+            <div className="text-xs font-mono text-gray-500 mb-1">FULLY CLEARED</div>
+            <div className="text-xl font-bold text-green-400 font-mono">{formatNaira(totalCleared)}</div>
+          </div>
+        </div>
+        <div className="mt-4 h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#C9A84C] to-green-400 rounded-full transition-all duration-700"
+            style={{ width: `${Math.min(100, Math.round((totalPaid / totalOwed) * 100))}%` }}
+          />
+        </div>
+        <div className="text-xs text-gray-500 font-mono mt-1 text-center">
+          {Math.min(100, Math.round((totalPaid / totalOwed) * 100))}% of total debt cleared
+        </div>
+      </div>
     </div>
   )
 }
