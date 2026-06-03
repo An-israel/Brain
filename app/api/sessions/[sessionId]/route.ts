@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params
-    const messages = await getSessionMessages(sessionId, 40)
+    const messages = await getSessionMessages(sessionId, 500)
     return NextResponse.json({ messages })
   } catch (error) {
     console.error('Session fetch error:', error)
