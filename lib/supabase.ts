@@ -174,6 +174,46 @@ export async function getContentCalendar() {
   return data || []
 }
 
+export async function saveLearning(learning: {
+  session_id?: string
+  learning: string
+  category?: string
+  importance?: number
+}) {
+  const client = createServerSupabaseClient()
+  await client.from('brain_learnings').insert(learning)
+}
+
+export async function getRecentLearnings(limit = 30) {
+  const client = createServerSupabaseClient()
+  const { data } = await client
+    .from('brain_learnings')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return data || []
+}
+
+export async function saveImprovement(improvement: {
+  trigger_source?: string
+  improvement_type: string
+  description: string
+  content?: string
+}) {
+  const client = createServerSupabaseClient()
+  await client.from('brain_improvements').insert({ ...improvement, applied: true })
+}
+
+export async function getImprovements(limit = 20) {
+  const client = createServerSupabaseClient()
+  const { data } = await client
+    .from('brain_improvements')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return data || []
+}
+
 // Update brain context
 export async function updateBrainContext(context: Record<string, unknown>) {
   const client = createServerSupabaseClient()

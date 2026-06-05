@@ -1,12 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildSystemPrompt } from '@/lib/brain'
 import { callClaude, ChatMessage } from '@/lib/claude'
-import { saveMessage, getSessionMessages, createServerSupabaseClient } from '@/lib/supabase'
+import { saveMessage, getSessionMessages, createServerSupabaseClient, saveLearning } from '@/lib/supabase'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
 
 const anthropic = new Anthropic()
+
+// Extract learnings from a conversation and save them
+async function extractLearnings(userMessage: string, brainReply: string, sessionId: string) {
+  try {
+    const prompt = `You are analyzing a conversation between Aniekan Israel and his AI Chief of Staff (BRAIN) to extract learnings that will make BRAIN smarter over time.
+
+User said: "${userMessage}"
+BRAIN replied: "${brainReply}"
+
+Extract 1-3 high-value learnings from this exchange. A learning is something BRAIN should remember and apply in ALL future conversations to serve Aniekan better.
+
+Examples of good learnings:
+- "Aniekan prefers direct, numbered action plans over paragraphs"
+- "Aniekan is stressed about rent due in July — always factor this into financial advice"
+- "When Aniekan asks about Skryve, he wants market validation tactics, not just strategy"
+- "Aniekan responds well to accountability framing — use it more"
+- "Aniekan mentioned he struggles with waking up at 4AM consistently"
+
+Categories: preference, fact, pattern, gap, improvement, habit, goal
+
+Return ONLY a JSON array:
+[{ "learning": "string", "category": "preference|fact|pattern|gap|improvement|habit|goal", "importance": 1-10 }]
+
+If nothing meaningful to extract, return [].`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const text = response.content.find(b => b.type === 'text')?.text || '[]'
+    const match = text.match(/\[[\s\S]*\]/)
+    if (!match) return
+
+    const learnings = JSON.parse(match[0])
+    for (const l of learnings) {
+      if (l.learning && l.importance >= 6) {
+        await saveLearning({
+          session_id: sessionId,
+          learning: l.learning,
+          category: l.category,
+          importance: l.importance,
+        })
+      }
+    }
+  } catch (err) {
+    console.error('Learning extraction error:', err)
+  }
+}
 
 // After BRAIN responds, extract any finance/task data and save it automatically
 async function extractAndSave(userMessage: string, brainReply: string) {
@@ -113,6 +163,8 @@ export async function POST(request: NextRequest) {
 
     // Auto-extract and save any finance/task data mentioned in the conversation
     extractAndSave(message, assistantResponse).catch(console.error)
+    // Extract learnings from this conversation in the background
+    extractLearnings(message, assistantResponse, sessionId).catch(console.error)
 
     return NextResponse.json({ response: assistantResponse })
   } catch (error) {

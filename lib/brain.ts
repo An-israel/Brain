@@ -1,4 +1,4 @@
-import { getBrainContext, getSessionMessages, getOpenTasks } from './supabase'
+import { getBrainContext, getSessionMessages, getOpenTasks, getRecentLearnings } from './supabase'
 
 const ANIEKAN_CONTEXT = `You are BRAIN — Aniekan Israel's AI Chief of Staff and extended mind. You are NOT a yes-person. You are his manager, strategist, and accountability enforcer.
 
@@ -97,10 +97,11 @@ export async function buildSystemPrompt(sessionId: string): Promise<string> {
   let recentConversationSummary = ''
 
   try {
-    const [brainContext, openTasks, recentMessages] = await Promise.all([
+    const [brainContext, openTasks, recentMessages, learnings] = await Promise.all([
       getBrainContext(),
       getOpenTasks(),
       getSessionMessages(sessionId, 40),
+      getRecentLearnings(20),
     ])
 
     if (brainContext) {
@@ -115,6 +116,10 @@ export async function buildSystemPrompt(sessionId: string): Promise<string> {
 
     if (recentMessages && recentMessages.length > 0) {
       recentConversationSummary = `\n\nRECENT CONVERSATION CONTEXT:\nThis session has ${recentMessages.length} messages so far. You have context from the conversation history above.`
+    }
+
+    if (learnings && learnings.length > 0) {
+      recentConversationSummary += `\n\nBRAIN LEARNINGS (extracted from conversations — apply these):\n${learnings.map((l: { category?: string; learning: string }) => `[${l.category?.toUpperCase() || 'LEARNING'}] ${l.learning}`).join('\n')}`
     }
   } catch (err) {
     console.error('Error building system prompt context:', err)
