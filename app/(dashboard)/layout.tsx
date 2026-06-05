@@ -15,6 +15,7 @@ const navItems = [
   { href: '/team', label: 'Team', icon: '👥' },
   { href: '/skryve', label: 'Skryve', icon: '⚡' },
   { href: '/nexus', label: 'Nexus', icon: '🏢' },
+  { href: '/evolution', label: 'Evolution', icon: '◎' },
 ]
 
 export default function DashboardLayout({
