@@ -32,17 +32,8 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: 'text-gray-500 border-gray-600',
 }
 
-const STATIC_TASKS: Task[] = [
-  { id: '1', title: 'Record "On a Detailed" podcast ep 1', area: 'personal_brand', priority: 'high', status: 'todo', assigned_to: 'aniekan' },
-  { id: '2', title: 'Post 3x content on TikTok this week', area: 'personal_brand', priority: 'high', status: 'in_progress', assigned_to: 'aniekan' },
-  { id: '3', title: 'Set up SkryveAI pivot roadmap', area: 'skryve', priority: 'critical', status: 'todo', assigned_to: 'aniekan' },
-  { id: '4', title: 'Hire new social media manager', area: 'personal_brand', priority: 'high', status: 'blocked', assigned_to: 'aniekan' },
-  { id: '5', title: 'Complete 5 student designs for EMC', area: 'emc', priority: 'critical', status: 'in_progress', assigned_to: 'aniekan' },
-  { id: '6', title: 'Plan June Value Session webinar', area: 'personal_brand', priority: 'high', status: 'todo', assigned_to: 'aniekan' },
-]
-
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(STATIC_TASKS)
+  const [tasks, setTasks] = useState<Task[]>([])
   const [areaFilter, setAreaFilter] = useState('all')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newTask, setNewTask] = useState<Partial<Task>>({
@@ -58,7 +49,7 @@ export default function TasksPage() {
     try {
       const res = await fetch('/api/tasks')
       const data = await res.json()
-      if (data.tasks && data.tasks.length > 0) {
+      if (data.tasks) {
         setTasks(data.tasks)
       }
     } catch {}
@@ -200,8 +191,23 @@ export default function TasksPage() {
                     key={task.id}
                     className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-lg p-3 hover:border-[#C9A84C22] transition-colors"
                   >
-                    <div className="text-sm text-white mb-2">{task.title}</div>
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-start gap-2 mb-2">
+                      <button
+                        onClick={() => updateStatus(task.id!, status === 'done' ? 'todo' : 'done')}
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all mt-0.5 ${
+                          status === 'done'
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-[#444] hover:border-green-500'
+                        }`}
+                        title={status === 'done' ? 'Mark as todo' : 'Mark as done'}
+                      >
+                        {status === 'done' && <span className="text-xs font-bold leading-none">✓</span>}
+                      </button>
+                      <div className={`text-sm flex-1 ${status === 'done' ? 'text-gray-500 line-through' : 'text-white'}`}>
+                        {task.title}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 ml-7">
                       <span className={`text-xs border rounded px-1.5 py-0.5 font-mono ${PRIORITY_COLORS[task.priority || 'medium']}`}>
                         {task.priority}
                       </span>
@@ -209,22 +215,23 @@ export default function TasksPage() {
                         <span className="text-xs text-gray-600 font-mono">{task.area.replace('_', ' ')}</span>
                       )}
                     </div>
-                    {/* Status change buttons */}
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {STATUSES.filter((s) => s !== status).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => updateStatus(task.id!, s)}
-                          className="text-xs text-gray-600 hover:text-[#C9A84C] transition-colors font-mono"
-                        >
-                          → {s.replace('_', ' ')}
-                        </button>
-                      ))}
-                    </div>
+                    {status !== 'done' && (
+                      <div className="flex gap-1 mt-2 ml-7 flex-wrap">
+                        {STATUSES.filter((s) => s !== status && s !== 'done').map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => updateStatus(task.id!, s)}
+                            className="text-xs text-gray-600 hover:text-[#C9A84C] transition-colors font-mono"
+                          >
+                            → {s.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {columnTasks.length === 0 && (
-                  <div className="text-xs text-gray-700 text-center py-4">No tasks</div>
+                  <div className="text-xs text-gray-700 text-center py-4 font-mono">Empty</div>
                 )}
               </div>
             </div>

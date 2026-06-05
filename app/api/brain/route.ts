@@ -161,10 +161,11 @@ export async function POST(request: NextRequest) {
 
     await saveMessage({ session_id: sessionId, role: 'assistant', content: assistantResponse })
 
-    // Auto-extract and save any finance/task data mentioned in the conversation
-    extractAndSave(message, assistantResponse).catch(console.error)
-    // Extract learnings from this conversation in the background
-    extractLearnings(message, assistantResponse, sessionId).catch(console.error)
+    // Run extractions in parallel BEFORE returning — Vercel kills async work after response
+    await Promise.allSettled([
+      extractAndSave(message, assistantResponse),
+      extractLearnings(message, assistantResponse, sessionId),
+    ])
 
     return NextResponse.json({ response: assistantResponse })
   } catch (error) {
